@@ -5,6 +5,7 @@
   "author": "deepak",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^16.0.3",
     "node-opcua": "^2.82.0",
     "nodemon": "^2.0.15",
     "socket.io": "^4.5.4",

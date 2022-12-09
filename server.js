@@ -9,14 +9,9 @@ const reqResFunc = (req,res) => {
         res.end("All Ok!")
     }
 }
-//const server = () =>{
-
-//};
 
 const serv = http.createServer(reqResFunc);
 const io = new Server(serv);
-
-
 
 //server()
 serv.listen(5000);

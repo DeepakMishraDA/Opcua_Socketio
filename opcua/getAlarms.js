@@ -22,7 +22,9 @@ const alarmCaller = require('./alarmCaller');
   }
 
 async function getAlarms(endpointUrl) {
-    const reqSession = await opcuaSession({endpointUrl});
+  const reqSession = await opcuaSession({endpointUrl});
+    await alarmCaller(reqSession);
+    
     const alarmInstance = await alarmCaller(reqSession);
     return  alarmInstance;
   }

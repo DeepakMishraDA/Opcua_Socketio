@@ -5,8 +5,9 @@ var fs = require('fs');
 const client = io.connect('http://localhost:3000');
 client.emit('conn',"Done!");
 client.on('alarms',data =>{
-    // fs.appendFile('alarmdata.js',JSON.stringify(data),function (err) {
-    //     if (err) {throw err};
+    fs.appendFile('alarmdata.js',JSON.stringify(data),function (err) {
+        if (err) {throw err};
+    });
         console.log('Saved!', data)
    const RRR = Object.values(data).map(dataa => {
    return dataa

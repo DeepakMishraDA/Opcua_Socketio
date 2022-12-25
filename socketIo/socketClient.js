@@ -9,8 +9,8 @@ client.on('alarms',data =>{
         if (err) {throw err};
     });
         console.log('Saved!', data)
-   const RRR = Object.values(data).map(dataa => {
-   return dataa
+//    const RRR = Object.values(data).map(dataa => {
+//    return dataa
 });
     console.log( RRR.length)
     let tt = []

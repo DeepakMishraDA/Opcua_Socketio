@@ -12,8 +12,8 @@ client.on('alarms',data =>{
 //    const RRR = Object.values(data).map(dataa => {
 //    return dataa
 });
-    console.log( RRR.length)
-    let tt = []
+    // console.log( RRR.length)
+    // let tt = []
     // for (const alarm of data) {
     // //console.log(alarm,"GAP!!!");
     // if (alarm.conditionId){
@@ -21,7 +21,7 @@ client.on('alarms',data =>{
     // }
     // }
     
-})
+//})
 client.on('alarmsc',data =>{
    // console.log("change:",data)
 })

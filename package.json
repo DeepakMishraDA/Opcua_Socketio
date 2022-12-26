@@ -10,10 +10,10 @@
     "express-graphql": "^0.12.0",
     "graphql": "^16.6.0",
     "node-opcua": "^2.82.0",
-    "socket.io": "^4.5.4",
-    "socket.io-client": "^4.5.4"
+    "socket.io": "^4.5.4"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "socket.io-client": "^4.5.4"
   }
 }

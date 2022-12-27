@@ -28,27 +28,14 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log('Listening on port 3000');
-});
+// server.listen(3000, () => {
+//   console.log('Listening on port 3000');
+// });
 
-// Construct a schema, using GraphQL schema language
-// var schema = buildSchema(`
-//   type Query {
-//     dell: String
-//   }
-// `);
+const port = 3000;
 
-// // The root provides a resolver function for each API endpoint
-// var root = {
-//   dell: () => {
-//     return 'Hello world!';
-//   },
-// };
+app.listen(port,() => {
+    console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+  });
 
 
-
-
-
-//app.listen(4000);
-console.log('Running a GraphQL API server at http://localhost:4000/graphql');

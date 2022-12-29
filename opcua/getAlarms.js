@@ -23,6 +23,7 @@ const alarmCaller = require('./alarmCaller');
 
 async function getAlarms(endpointUrl) {
   const reqSession = await opcuaSession({endpointUrl});
+  console.log("jj")
     await alarmCaller(reqSession);
     
     const alarmInstance = await alarmCaller(reqSession);

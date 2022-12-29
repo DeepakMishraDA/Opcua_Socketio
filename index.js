@@ -4,7 +4,8 @@ var { buildSchema } = require('graphql');
 var router = express.Router();
 const path = require('path')
 const app = express();
-const server = require('http').Server(app);
+const http = require('http')
+const server = http.createServer(app);
 const io = require('socket.io')(server);
 const alarmsOpc = require('./opcua/alarmApp');
 require('dotenv').config();
@@ -35,7 +36,7 @@ io.on('connection', (socket) => {
 
 const port = process.env.Port;
 
-app.listen(port,() => {
+server.listen(port,() => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
   });
 

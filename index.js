@@ -6,6 +6,10 @@ const path = require('path')
 const app = express();
 const http = require('http')
 const server = http.createServer(app);
+
+// u can alternatively create a Server instance of socket.io
+//const { Server } = require("socket.io");
+//const io = new Server(server);
 const io = require('socket.io')(server);
 const alarmsOpc = require('./opcua/alarmApp');
 require('dotenv').config();
@@ -20,7 +24,7 @@ app.get('/',(req,res)=>{
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  socket.emit('alarms', (data) => {
+  socket.on('alarms', (data) => {
     console.log(`Received data: ${data}`);
     alarmsOpc(socket)
   });
@@ -30,9 +34,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// server.listen(3000, () => {
-//   console.log('Listening on port 3000');
-// });
+
 
 const port = process.env.Port;
 

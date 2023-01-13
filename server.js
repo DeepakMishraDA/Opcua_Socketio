@@ -15,11 +15,14 @@ const io = new Server(serv);
 
 //server()
 serv.listen(5000);
-io.on('connection', (socket) => {
+io.on('connection',(socket) => {
     console.log('a user connected');
-    alarmsOpc(socket)
+    //alarmsOpc(socket);
+   // alarmsOpc(socket)
 
     socket.on('conn',data=>{
-        console.log(data)})
+        console.log(data)
+        alarmsOpc(socket)
+        })
   });
   

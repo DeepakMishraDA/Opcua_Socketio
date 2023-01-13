@@ -1,4 +1,4 @@
-const getAlarms = require('./getAlarms');
+const {getAlarms} = require('./getAlarms');
 require('dotenv').config();
 
 async function alarmsOpc(socket) { //{endpoint,socket}
@@ -6,16 +6,17 @@ async function alarmsOpc(socket) { //{endpoint,socket}
     console.log(alarmsInstance)
     //socket.emit('alarms',alarmsInstance)
     alarmsInstance.on('newAlarm', async alarmValue => {
+      //console.log(alarmValue)
         try {   
-          socket.emit('alarms',alarmValue)
-          console.log(alarmValue)
+          //socket.emit('alarms',alarmValue)
+          //console.log(alarmValue)
         } catch (err) {
           console.log(err);
         }
       });
       alarmsInstance.on('alarmChanged', async alarmValue => {
         try {
-           socket.emit('alarmsc',alarmValue.fields.conditionId.value)
+           //socket.emit('alarmsc',alarmValue.fields.conditionId.value)
         } catch (err) {
           console.log(err);
         }

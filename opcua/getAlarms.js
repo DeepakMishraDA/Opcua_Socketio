@@ -1,6 +1,6 @@
 const  { OPCUAClient } = require('node-opcua');
 const alarmCaller = require('./alarmCaller');
-const beforeShutdown = require('./beforeShutdown');
+const beforeShutdown = require('../helpers/beforeShutdown');
 
   async function opcuaSession({ endpointUrl }) {
     const client = OPCUAClient.create({

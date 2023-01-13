@@ -22,6 +22,7 @@ function r(_key, o) {
 async function alarmCaller(session) {
   const _sessionPriv = session;
   // create
+ // console.log('""""',_sessionPriv.$clientAlarmList)
   if (_sessionPriv.$clientAlarmList) {
     return _sessionPriv.$clientAlarmList;
   }
@@ -58,7 +59,7 @@ async function alarmCaller(session) {
     monitoringParameters,
     node_opcua_service_read_1.TimestampsToReturn.Both,
   );
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 100));
   const RefreshStartEventType = node_opcua_nodeid_1
     .resolveNodeId('RefreshStartEventType')
     .toString();
@@ -66,6 +67,7 @@ async function alarmCaller(session) {
     .resolveNodeId('RefreshEndEventType')
     .toString();
   event_monitoringItem.on('changed', eventFields => {
+    //console.log(eventFields)
     const pojo = fieldsToJson(fields, eventFields);
     try {
       if (pojo.eventType.value.toString() === RefreshStartEventType) {
@@ -82,7 +84,9 @@ async function alarmCaller(session) {
         // not a acknowledgeable condition
         return;
       }
+      
       clientAlarmList.update(pojo);
+     // console.log("POJO:",clientAlarmList)
     } catch (err) {
       // tslint:disable-next-line: no-console
       // tslint:disable-next-line: no-console
@@ -109,7 +113,8 @@ async function alarmCaller(session) {
   }
   _sessionPriv.$monitoredItemForAlarmList = event_monitoringItem;
   // also request updates
-  return clientAlarmList;
+  // console.log("POJO:",clientAlarmList)
+  // return clientAlarmList;
 }
 
 module.exports = alarmCaller;

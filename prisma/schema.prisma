@@ -13,7 +13,11 @@ datasource db {
 model alarms {
   id String  @id @default(uuid()) @db.Uuid
   node String 
- 
+  alarm_text String? @default(" ")@db.VarChar(1000)
+  severity Int?  @default(500)
+  raised_time   Decimal @db.Decimal(15,3) @default(0) 
+  relevant Boolean? 
+  archived Boolean?
   @@index([id])
 }
 

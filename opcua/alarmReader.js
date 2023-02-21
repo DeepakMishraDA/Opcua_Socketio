@@ -1,58 +1,112 @@
-const opcua = require("node-opcua");
-require('dotenv').config();
+const { EventEmitter } = require( "events");
+const { assert } = require( "node-opcua-assert");
+//const { NodeId } = require( "node-opcua-nodeid");
+const { ClientAlarm } = require('node-opcua-client');;
 
-const client = opcua.OPCUAClient.create({
-    endpointMustExist: false,
-  });
+// export interface ClientAlarmList {
+//     on(eventName: "alarmChanged", handler: (alarm: ClientAlarm) => void): this;
+//     // tslint:disable-next-line: unified-signatures
+//     on(eventName: "newAlarm", handler: (alarm: ClientAlarm) => void): this;
+// }
+// maintain a set of alarm list for a client
+ class ClientAlarmList extends EventEmitter {
 
-const endpointUrl = process.env.EndpointUrl;
+     _map = {};
 
-client.connect(endpointUrl, (err) => {
-  if (err) {
-    console.log("Error connecting to OPC UA server: ", err);
-    return;
-  }
-
-  console.log("Connected to OPC UA server");
-
-  const session = client.createSession();
-  const tt = opcua.extractConditionFields(session);
-  tt.then(data=>data)
-  session.installAlarmReader((err, alarmReader) => {
-    if (err) {
-      console.log("Error installing alarm reader: ", err);
-      return;
+      constructor() {
+        super();
     }
 
-    console.log("Alarm reader installed");
+      [Symbol.iterator](){
+        let pointer = 0;
+        const components = Object.values(this._map);
+        return {
+            next(){
+                if (pointer >= components.length) {
+                    return {
+                        done: true,
+                        value: components[pointer++]
+                    };
+                } else {
+                    return {
+                        done: false,
+                        value: components[pointer++]
+                    };
+                }
+            }
+        };
+    }
 
-    // Now you can use the 'alarmReader' object to read alarms from the server
+      alarms(){
+        return Object.values(this._map);
+    }
 
-    // Don't forget to close the session and disconnect the client when you're done
-    session.close((err) => {
-      if (err) {
-        console.log("Error closing session: ", err);
-        return;
-      }
+      update(eventField) {
 
-      client.disconnect((err) => {
-        if (err) {
-          console.log("Error disconnecting from OPC UA server: ", err);
-          return;
+        // Spec says:
+        // Clients shall check for multiple Event Notifications for a ConditionBranch to avoid
+        // overwriting a new state delivered together with an older state = require( the Refresh
+        // process.
+
+        const { conditionId, eventType } = eventField;
+        //console.log(conditionId, eventType )
+        assert(conditionId, "must have a valid conditionId ( verify that event is a acknodweldgeable type");
+        const alarm = this.findAlarm(conditionId.value, eventType.value);
+
+        if (!alarm) {
+            const key = this.makeKey(conditionId.value, eventType.value);
+            const newAlarm = new ClientAlarm(eventField);
+            this._map[key] = newAlarm;
+            this.emit("newAlarm", newAlarm);
+            this.emit("alarmChanged", alarm);
+        } else {
+            alarm.update(eventField);
+            this.emit("alarmChanged", alarm);
         }
+    }
+      removeAlarm(eventField) {
+        const { conditionId, eventType } = eventField;
+        const alarm = this.findAlarm(conditionId.value, eventType.value);
+        if (alarm) {
+            alarm.update(eventField);
+            this._removeAlarm(alarm);
+        }
+    }
 
-        console.log("Disconnected from OPC UA server");
-      });
-    });
-    alarmReader.on('newAlarm', async alarmValue => {
-        //console.log(alarmValue)
-          try {   
-            //socket.emit('alarms',alarmValue)
-            console.log(alarmValue)
-          } catch (err) {
-            console.log(err);
-          }
-        });
-  });
-});
+      get length() {
+        return Object.keys(this._map).length;
+    }
+      purgeUnusedAlarms() {
+        const alarms = this.alarms();
+        for (const alarm of alarms) {
+            if (!alarm.getRetain()) {
+                this._removeAlarm(alarm);
+            }
+        }
+    }
 
+     _removeAlarm(alarm) {
+        this.emit("alarmDeleted", alarm);
+        this.deleteAlarm(alarm.conditionId, alarm.eventType);
+    }
+
+     makeKey(conditionId, eventType) {
+        return conditionId.toString() + "|" + eventType.toString();
+    }
+     findAlarm(conditionId, eventType) {
+        const key = this.makeKey(conditionId, eventType);
+        const _c = this._map[key];
+        return _c || null;
+    }
+     deleteAlarm(conditionId, eventType) {
+        const key = this.makeKey(conditionId, eventType);
+        const _c = this._map[key];
+        if (_c) {
+            delete this._map[key];
+            return true;
+        }
+        return false;
+
+    }
+}
+module.exports = ClientAlarmList;

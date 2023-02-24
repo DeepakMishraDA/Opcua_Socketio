@@ -1,5 +1,5 @@
 const  { OPCUAClient } = require('node-opcua');
-const alarmCaller = require('./alarmCaller');
+const alarmCaller = require('./alarmCaller1');
 const beforeShutdown = require('../helpers/beforeShutdown');
 
   async function opcuaSession({ endpointUrl }) {
@@ -24,29 +24,56 @@ const beforeShutdown = require('../helpers/beforeShutdown');
     }
     console.log('connected to OpcServer now!');
     const session = await client.createSession();
-    const subscription = await session.createSubscription2({
-      requestedPublishingInterval: 200,
-      requestedMaxKeepAliveCount: 20,
-      maxNotificationsPerPublish: 1000,
-      publishingEnabled: true,
-      priority: 10,
+    //await session.close(true);
+    console.log('closing opcua session');
+    // const session = await client.createSession();
+    // const subscription = await session.createSubscription2({
+    //   requestedPublishingInterval: 200,
+    //   requestedMaxKeepAliveCount: 20,
+    //   maxNotificationsPerPublish: 1000,
+    //   publishingEnabled: true,
+    //   priority: 10,
+    // });
+    // await session.close(true);
+    async function onShutdown() {
+      await session.close(true);
+      console.log('opc server closing!');
+      await client.disconnect();
+      console.log('Shutting down');
+      console.log('Received signal to shut down.');
+      // Perform any necessary cleanup here
+      process.exit(0);
+    }
+    
+    process.on('SIGINT',  async function () {
+      await session.close(true);
+      console.log('opc server closing!');
+      await client.disconnect();
+      console.log('Shutting down');
+      console.log('Received signal to shut down.');
+      // Perform any necessary cleanup here
+      process.exit(0);
     });
-    (async () => {
-      console.log('closing opcua session');
-      await this.session.close(true);
-      await this.client.disconnect();
-      console.log('opcua session closed');
+    process.on('SIGTERM', async function () {
+      await session.close(true);
+      console.log('opc server closing!');
+      await client.disconnect();
+      console.log('Shutting down');
+      console.log('Received signal to shut down.');
+      // Perform any necessary cleanup here
+      process.exit(0);
     });
-    return session;
+    beforeShutdown(onShutdown);
+      return session;
   }
 
 async function getAlarms(endpointUrl) {
   const reqSession = await opcuaSession({endpointUrl});
   console.log("jj")
-    await alarmCaller(reqSession);
+    //await alarmCaller(reqSession);
     
-    const alarmInstance = await alarmCaller(reqSession);
-    return  alarmInstance;
+     const alarmInstance = await alarmCaller(reqSession);
+     return  alarmInstance;
   }
 
 module.exports = {getAlarms,opcuaSession} ;

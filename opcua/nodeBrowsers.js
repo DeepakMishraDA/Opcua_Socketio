@@ -43,7 +43,7 @@ makeSession().then(async ({session,client}) => {
   const nodeId = 'ns=2;s=IDS.Datapoints.Modbus.mdbDev2.mdbDp99';
   const browseData = await session.read({ nodeId });
   const nsArray = await session.readNamespaceArray();
-  //console.log("DATA:",nsArray);
+  console.log("DATA:",nsArray);
 
   const browseOptions = {
     nodeId: 'i=2553[Server]', // start browsing from the root folder of the server

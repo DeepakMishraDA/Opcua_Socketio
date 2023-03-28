@@ -1,7 +1,45 @@
 const { OPCUAClient } = require('node-opcua');
 const opcua = require("node-opcua");
 //import isUUID from 'validator/lib/isUUID';
+const createConnectionPool = require('@databases/pg');
+const { sql } = require('@databases/pg');
+require('dotenv').config();
 
+async function run2(query) {
+  // N.B. you will need to replace this connection
+  // string with the correct string for your database.
+  const db = createConnectionPool({
+    connectionString: 'postgres://gf-test:gf-test@localhost:5434/postgres',
+    //process.env.DATABASE_URL , //postgres://gf-test:gf-test@localhost:5434/postgres',
+	bigIntMode: 'bigint',
+	//'postgres://dmishra:V1!W2fj4MwQr@localhost:5433/postgres',
+});
+
+  const results = await db.query(query);
+  await db.dispose();
+  return results;
+  // => [{result: 2}]
+
+  //await db.dispose();
+}
+
+async function run1(query) {
+  // N.B. you will need to replace this connection
+  // string with the correct string for your database.
+  const db = createConnectionPool({
+    connectionString: 'postgres://dmishra:V1!W2fj4MwQr@localhost:5433/postgres',
+    //process.env.DATABASE_URL , //postgres://gf-test:gf-test@localhost:5434/postgres',
+	bigIntMode: 'bigint',
+	//'postgres://dmishra:V1!W2fj4MwQr@localhost:5433/postgres',
+});
+
+  const results = await db.query(query);
+  await db.dispose();
+  return results;
+  // => [{result: 2}]
+
+  //await db.dispose();
+}
 // function getChildrenNodes(browseNode) {
 //   const childrenRefs = browseNode.references.filter(
 //     value => value.referenceTypeId.value == 47,
@@ -19,8 +57,9 @@ const opcua = require("node-opcua");
 //     .join('\n');
 // }
 
-async function makeSession() {
-  const endpointUrl = 'opc.tcp://10.7.3.20:4840'; //TODO: Make a link between building Uuid and ip via Postgres
+async function makeSession(endpointUrl) {
+  //console.log(result)
+  //const endpointUrl = 'opc.tcp://10.1.3.178:4840'; //'opc.tcp://10.7.3.20:4840'; //TODO: Make a link between building Uuid and ip via Postgres
   const client = OPCUAClient.create({
     endpointMustExist: false,
     //certificateFile:
@@ -39,33 +78,77 @@ async function makeSession() {
   const session = await client.createSession();
   return {session,client};
 }
-makeSession().then(async ({session,client}) => {
-  const nodeId = 'ns=2;s=IDS.Datapoints.Modbus.mdbDev2.mdbDp99';
-  const browseData = await session.read({ nodeId });
-  const nsArray = await session.readNamespaceArray();
-  console.log("DATA:",nsArray);
 
-  const browseOptions = {
-    nodeId: 'i=2553[Server]', // start browsing from the root folder of the server
-    referenceTypeId: opcua.resolveNodeId("Organizes"), // only browse nodes that are organized by the server
-    includeSubtypes: true, // browse all subtypes of the reference type
-    browseDirection: opcua.BrowseDirection.Forward, // browse in the forward direction
-    resultMask: opcua.makeResultMask("ReferenceType | IsForward | BrowseName | NodeClass | TypeDefinition") // include the desired node attributes in the results
-};
- //ns=2;s=IDS.Datapoints.Modbus.mdbDev1
-session.browse('ns=2;s=IDS.Datapoints.Modbus.mdbDev1', (err, browseResult) => {
-  if (err) {
-    console.log("Could not browse node:", err);
-  } else {
-    console.log("Browse result:", Object.values(browseResult)[2]);
-    // process the browse result here
+async function getValues({query,url}){
+  //const query = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 1;`
+  const result = await run1(query);
+  //console.log(result)
+  const { session,client }  = await makeSession(url);
+  //const nodeId = 'ns=4;s=PRG_HK1.FB_PID.rIN_Solltemperatur';
+  for (const nid in result) {
+    //console.log(result[nid].node_id);
+        let nodeId = result[nid].node_id;
+        const browseData = await session.read({ nodeId });
+
+        const qu = sql`INSERT INTO public.orders (username) Values (${browseData.value.value})`;
+        await run2(qu);
+        // result.forEach(async item => {
+        //     //const nodeId = 'ns=2;s=IDS.Datapoints.Modbus.mdbDev1.mdbDp73';
+        //     const browseData = await session.read({ item });
+        //     //const nsArray = await session.readNamespaceArray();
+        //     console.log("DATA:",browseData.value);
+        // });
+        //console.log(`DATA's ${nodeId} and ${browseData.value.value}`);
+
   }
-});
-session.close(() => {
-  console.log("Session closed");
-})
-client.disconnect();
-});
+  session.close(() => {
+    console.log("Session closed");
+  })
+  client.disconnect();
+}
+
+
+const endpointUrl1 = 'opc.tcp://10.1.3.178:4840';
+const endpointUrl2 = 'opc.tcp://10.3.3.20:4840';
+const query1 = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 1;`;
+const query2 = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 3;`;
+
+module.exports = getValues;
+// getValues({query:query1,url:endpointUrl1}).then(data => {
+//   return;
+// });
+
+// getValues({query:query2,url:endpointUrl2}).then(data => {
+//   return;
+// })
+
+
+
+
+// await makeSession();
+//   .then(async ({session,client}) => {
+//     //const nodeId = 'ns=2;s=IDS.Datapoints.Modbus.mdbDev1.mdbDp73';
+//     const browseData = await session.read({ item });
+//     //const nsArray = await session.readNamespaceArray();
+//     console.log("DATA:",browseData.value);
+
+//   const browseOptions = {
+//     nodeId: 'i=2553[Server]', // start browsing from the root folder of the server
+//     referenceTypeId: opcua.resolveNodeId("Organizes"), // only browse nodes that are organized by the server
+//     includeSubtypes: true, // browse all subtypes of the reference type
+//     browseDirection: opcua.BrowseDirection.Forward, // browse in the forward direction
+//     resultMask: opcua.makeResultMask("ReferenceType | IsForward | BrowseName | NodeClass | TypeDefinition") // include the desired node attributes in the results
+// };
+ //ns=2;s=IDS.Datapoints.Modbus.mdbDev1
+// session.browse('ns=2;s=IDS.Datapoints.Modbus.mdbDev1', (err, browseResult) => {
+//   if (err) {
+//     console.log("Could not browse node:", err);
+//   } else {
+//     console.log("Browse result:", Object.values(browseResult)[2]);
+//     // process the browse result here
+//   }
+// });
+
 // TODO: get rid of this
 
 // export async function getNodeIdCounter(

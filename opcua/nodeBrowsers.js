@@ -1,45 +1,17 @@
-const { OPCUAClient } = require('node-opcua');
-const opcua = require("node-opcua");
-//import isUUID from 'validator/lib/isUUID';
-const createConnectionPool = require('@databases/pg');
+// const { OPCUAClient } = require('node-opcua');
+// const opcua = require("node-opcua");
+// //import isUUID from 'validator/lib/isUUID';
+// const createConnectionPool = require('@databases/pg');
 const { sql } = require('@databases/pg');
+const { parentPort } = require('node:worker_threads');
 require('dotenv').config();
+const { Worker } = require('worker_threads');
 
-async function run2(query) {
-  // N.B. you will need to replace this connection
-  // string with the correct string for your database.
-  const db = createConnectionPool({
-    connectionString: 'postgres://gf-test:gf-test@localhost:5434/postgres',
-    //process.env.DATABASE_URL , //postgres://gf-test:gf-test@localhost:5434/postgres',
-	bigIntMode: 'bigint',
-	//'postgres://dmishra:V1!W2fj4MwQr@localhost:5433/postgres',
-});
+const makeSession = require('./makeSession');
+const run1 = require('./run1');
+const run2 = require('./run2');
 
-  const results = await db.query(query);
-  await db.dispose();
-  return results;
-  // => [{result: 2}]
 
-  //await db.dispose();
-}
-
-async function run1(query) {
-  // N.B. you will need to replace this connection
-  // string with the correct string for your database.
-  const db = createConnectionPool({
-    connectionString: 'postgres://dmishra:V1!W2fj4MwQr@localhost:5433/postgres',
-    //process.env.DATABASE_URL , //postgres://gf-test:gf-test@localhost:5434/postgres',
-	bigIntMode: 'bigint',
-	//'postgres://dmishra:V1!W2fj4MwQr@localhost:5433/postgres',
-});
-
-  const results = await db.query(query);
-  await db.dispose();
-  return results;
-  // => [{result: 2}]
-
-  //await db.dispose();
-}
 // function getChildrenNodes(browseNode) {
 //   const childrenRefs = browseNode.references.filter(
 //     value => value.referenceTypeId.value == 47,
@@ -57,41 +29,26 @@ async function run1(query) {
 //     .join('\n');
 // }
 
-async function makeSession(endpointUrl) {
-  //console.log(result)
-  //const endpointUrl = 'opc.tcp://10.1.3.178:4840'; //'opc.tcp://10.7.3.20:4840'; //TODO: Make a link between building Uuid and ip via Postgres
-  const client = OPCUAClient.create({
-    endpointMustExist: false,
-    //certificateFile:
-  //     '/home/ubuntu/energy-management-frontend/certificates/PKI/own/certs/certificate_2021-08-11_1628671021385.pem',
-  //   privateKeyFile:
-  //     '/home/ubuntu/energy-management-frontend/certificates/PKI/own/private/private_key.pem',
-  //   // certificateFile: '/home/joey/credentials/certs/local_node_working.der',
-  //   // privateKeyFile:
-  //   //   '/home/joey/credentials/certs/certificates/PKI/own/private/private_key.pem',
-  //   securityPolicy: 'http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256',
-  //   securityMode: 3,
-   });
 
-  await client.connect(endpointUrl);
 
-  const session = await client.createSession();
-  return {session,client};
-}
-
-async function getValues({query,url}){
+async function getValues(params){
   //const query = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 1;`
+  //const url = params.paraOne;
+  const query = params.paraTwo;
+  //console.log(params)
   const result = await run1(query);
   //console.log(result)
-  const { session,client }  = await makeSession(url);
+  const { session,client }  = await makeSession(result[0].opc);
   //const nodeId = 'ns=4;s=PRG_HK1.FB_PID.rIN_Solltemperatur';
   for (const nid in result) {
-    //console.log(result[nid].node_id);
-        let nodeId = result[nid].node_id;
-        const browseData = await session.read({ nodeId });
-
-        const qu = sql`INSERT INTO public.orders (username) Values (${browseData.value.value})`;
-        await run2(qu);
+      console.log(result[nid]);
+        // let nodeId = result[nid].node_id;
+        // const browseData = await session.read({ nodeId });
+      
+        // console.log(`${nid} DATA of ${result[0].building} which's ${nodeId} is ${browseData.value.value})`);
+        //console.log("DATA:",nsArray);
+        //const qury = sql`INSERT INTO public.orders (username) Values (${browseData.value.value})`;
+        //await run2(qury);
         // result.forEach(async item => {
         //     //const nodeId = 'ns=2;s=IDS.Datapoints.Modbus.mdbDev1.mdbDp73';
         //     const browseData = await session.read({ item });
@@ -108,12 +65,71 @@ async function getValues({query,url}){
 }
 
 
+
 const endpointUrl1 = 'opc.tcp://10.1.3.178:4840';
 const endpointUrl2 = 'opc.tcp://10.3.3.20:4840';
-const query1 = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 1;`;
-const query2 = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 3;`;
+const query1 = sql`SELECT opc,node_id,building FROM gfcdb.sensor s 
+JOIN gfcdb.building ON building.id = s.building
+WHERE building = 1;`;
+const query2 = sql`SELECT opc,node_id,building FROM gfcdb.sensor s 
+JOIN gfcdb.building ON building.id = s.building
+WHERE building = 3;`
+const query3 = sql`SELECT ARRAY_AGG(node_id),opc FROM gfcdb.sensor s 
+JOIN gfcdb.building ON building.id = s.building
+WHERE opc_bridge_id = 1 
+ AND opc is not Null 
+ And s.monthly = false
+ AND  s.periodic = false
+ GROUP BY opc;`;
+const paramsArray = [{ parOne: endpointUrl1, paraTwo: query3 }]
+// { parOne: endpointUrl2, paraTwo: query2 }];
+// const paramsArray2 = { parOne: endpointUrl2, paraTwo: query2 };
+// const paramsArray1 = { parOne: endpointUrl1, paraTwo: query1 };
+// getValues(paramsArray1).then(data=>{
+//   return
+// }
+// );
 
-module.exports = getValues;
+// getValues(paramsArray2).then(data=>{
+//   return
+// }
+// )
+paramsArray.map(async param => {
+  await getValues(param).then(data=>{
+    return;
+  }
+  )
+});
+// const query3 = sql`SELECT building AS b FROM gfcdb.sensor s 
+// JOIN gfcdb.building ON building.id = s.building
+// WHERE opc_bridge_id = 1 
+//  AND opc is not Null 
+//  And s.monthly = false
+//  AND  s.periodic = false --for np>>false
+// GROUP BY opc, building;`;
+// const paramsArray = [];
+// run1(query3).then(data=>{
+//     data.map(b => {
+//         paramsArray.push({ paraTwo:b.b})});
+//     paramsArray.map(async param => {
+//       console.log("::;",param);
+//       await getValues(param).then(data=>{
+//         return
+//       }
+//       )
+//     });
+// })
+
+// parentPort.on('message',(params) => {
+//   console.log(params)
+//   //console.log(getValues(params))
+// })
+// const endpointUrl1 = 'opc.tcp://10.1.3.178:4840';
+// const endpointUrl2 = 'opc.tcp://10.3.3.20:4840';
+// const query1 = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 1;`;
+// const query2 = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 3;`;
+
+//module.exports = getValues;
 // getValues({query:query1,url:endpointUrl1}).then(data => {
 //   return;
 // });

@@ -1,7 +1,3 @@
-// const { OPCUAClient } = require('node-opcua');
-// const opcua = require("node-opcua");
-// //import isUUID from 'validator/lib/isUUID';
-// const createConnectionPool = require('@databases/pg');
 const { sql } = require('@databases/pg');
 const { parentPort } = require('node:worker_threads');
 require('dotenv').config();
@@ -12,25 +8,17 @@ const run1 = require('./run1');
 const run2 = require('./run2');
 
 
-// function getChildrenNodes(browseNode) {
-//   const childrenRefs = browseNode.references.filter(
-//     value => value.referenceTypeId.value == 47,
-//   );
-//   return childrenRefs;
-// }
-
-// export function convertToCSV(arr) {
-//   const array = [Object.keys(arr[0])].concat(arr);
-
-//   return array
-//     .map(it => {
-//       return Object.values(it).toString();
-//     })
-//     .join('\n');
-// }
-
-
-
+class NodeBrowsers {
+  init(data) {
+    try {
+      this.schema = 'mendelstrasse';
+      this.data = data;
+    } catch (err) {
+      console.log(err);
+    }
+  
+  }
+}
 async function getValues(params){
   //const query = sql`SELECT node_id FROM gfcdb.sensor WHERE building = 1;`
   //const url = params.paraOne;
@@ -38,10 +26,10 @@ async function getValues(params){
   //console.log(params)
   const result = await run1(query);
   //console.log(result)
-  const { session,client }  = await makeSession(result[0].opc);
+  //const { session,client }  = await makeSession(result[0].opc);
   //const nodeId = 'ns=4;s=PRG_HK1.FB_PID.rIN_Solltemperatur';
   for (const nid in result) {
-      console.log(result[nid]);
+      console.log(result[nid].opc);
         // let nodeId = result[nid].node_id;
         // const browseData = await session.read({ nodeId });
       
@@ -58,10 +46,10 @@ async function getValues(params){
         //console.log(`DATA's ${nodeId} and ${browseData.value.value}`);
 
   }
-  session.close(() => {
-    console.log("Session closed");
-  })
-  client.disconnect();
+  // session.close(() => {
+  //   console.log("Session closed");
+  // })
+  // client.disconnect();
 }
 
 
@@ -100,6 +88,7 @@ paramsArray.map(async param => {
   }
   )
 });
+
 // const query3 = sql`SELECT building AS b FROM gfcdb.sensor s 
 // JOIN gfcdb.building ON building.id = s.building
 // WHERE opc_bridge_id = 1 
@@ -165,151 +154,12 @@ paramsArray.map(async param => {
 //   }
 // });
 
-// TODO: get rid of this
 
-// export async function getNodeIdCounter(
-//   //res,
-//   //buildingUuid,
-//   nodeId,
-//   session,
-//   //nodeName,
-// ) {
 //   const browseNode = await session.browse({ nodeId });
-
-  // const yearNodes = await Promise.all(
-  //   getChildrenNodes(browseNode).map(async node => ({
-  //     yearNode: await session.browse(node.nodeId),
-  //     year: node.browseName.name,
-  //   })),
-  // );
-
-  // const monthNodes = yearNodes.map(yearNode => ({
-  //   yearNode,
-  //   monthNodes: getChildrenNodes(yearNode.yearNode),
-  // }));
-  // const browseArray = [].concat(
-  //   monthNodes[0].monthNodes,
-  //   monthNodes[1].monthNodes,
-  // );
-  // const nodeArray = await session.browse(browseArray);
-  // const splitNodeArrays = [
-  //   nodeArray.slice(0, nodeArray.length / 2),
-  //   nodeArray.slice(-nodeArray.length / 2),
-  // ];
-  // let finalNodeArray = [];
-  // monthNodes.map((yearNode, yearIndex) => {
-  //   yearNode.monthNodes.map((monthNode, monthIndex) => {
-  //     finalNodeArray.push({
-  //       nodeId: splitNodeArrays[yearIndex][monthIndex].references.filter(
-  //         ref => ref.browseName.name == 'monthly_difference',
-  //       )[0]?.nodeId,
-  //       monthName: monthNode.browseName.name,
-  //       yearName: yearNode.yearNode.year,
-  //     });
-  //   });
- // });
   // finalNodeArray = finalNodeArray.filter(node => node.nodeId);
   // const getNodeArray = finalNodeArray.map(node => ({ nodeId: node.nodeId }));
   // (await session.read(getNodeArray)).map((node, index) => {
   //   let value = node.value.value;
-  //   value = Array.isArray(value) ? null : value;
-  //   finalNodeArray[index].value = value;
-  // });
-
-  // const thisYear = new Date().getFullYear();
-  // const thisMonth = new Date().getMonth() + 1;
-  // const thisDay = new Date().getDate();
-  // const returnData = finalNodeArray.map(nodeResults => {
-  //   const monthInt = parseInt(nodeResults.monthName.slice(-2));
-  //   return {
-  //     counter: nodeName,
-  //     month: monthInt,
-  //     year:
-  //       nodeResults.yearName == 'this_year'
-  //         ? thisYear
-  //         : nodeResults.yearName == 'last_year'
-  //         ? thisYear - 1
-  //         : null,
-  //     value: nodeResults.value,
-  //     note:
-  //       monthInt == thisMonth && nodeResults.yearName == 'this_year'
-  //         ? `(bis ${thisDay}.${thisMonth})`
-  //         : null,
-  //   };
-  // });
-  // returnData.sort((a, b) => {
-  //   const yearDiff = a.year - b.year;
-  //   if (yearDiff != 0) {
-  //     return yearDiff;
-  //   } else {
-  //     return a.month - b.month;
-  //   }
-  // });
-//   return returnData;
-// }
-
-// export async function counterHandler(req, res, testing = false) {
-//   if (req.method === 'GET') {
-//     const { buildingUuid, nodePath } = req.query;
-//     if (!(nodePath && buildingUuid && isUUID(buildingUuid))) {
-//       res.status(400).send('Bad Request');
-//       return;
-//     }
-//     const nodeId = staticNodeIdMapping?.[nodePath];
-//     if (nodeId == null) {
-//       res.status(404).send('NodePath not found');
-//     }
-//     const session = await (testing ? null : makeSession());
-//     const counterData = testing
-//       ? [
-//           { a: 1, b: 2 },
-//           { a: 3, b: 4 },
-//         ]
 //       : await getNodeIdCounter(res, buildingUuid, nodeId, session, nodePath);
 //     session ? await session.close() : null;
 
-//     res.setHeader('content-type', 'text/csv');
-//     res.setHeader(
-//       'Content-Disposition',
-//       `attachment; filename="${nodePath}.csv"`,
-//     );
-//     res.send(convertToCSV(counterData));
-//     return;
-//   } else {
-//     res.status(405).send('Method Not Allowed');
-//     return;
-//   }
-// }
-
-// async function dummyCounterHandler(req, res) {
-//   if (req.method === 'GET') {
-//     const { buildingUuid, nodeId } = req.query;
-//     if (!isUUID(buildingUuid)) {
-//       res.status(400).send('Bad Request');
-//       return;
-//     }
-
-//     res.setHeader('content-type', 'text/csv');
-//     res.setHeader(
-//       'Content-Disposition',
-//       `attachment; filename="${nodeId}.csv"`,
-//     );
-//     res.send('a,b,c\n1,2,3\n4,5,6');
-//     res.status(200);
-//     return;
-//   } else {
-//     res.status(405).send('Method Not Allowed');
-//     return;
-//   }
-// }
-// const nextConfig = getConfig();
-
-// let handler = null;
-
-// if (nextConfig?.publicRuntimeConfig.development == true) {
-//   handler = dummyCounterHandler;
-// } else {
-//   handler = counterHandler; //TODO: find a way of safely authenticating this
-// }
-
-//export default handler;
